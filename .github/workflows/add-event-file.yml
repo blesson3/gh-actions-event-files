@@ -1,0 +1,81 @@
+name: add event file
+
+# this includes most available triggers so this action can run in as many contexts as possible 
+# while saving the event file for each one
+on:
+  check_run:
+  check_suite:
+  create:
+  delete:
+  deployment_status:
+  deployment:
+  discussion_comment:
+  discussion:
+  fork:
+  gollum:
+  issue_comment:
+  issues:
+  label:
+  milestone:
+  page_build:
+  project_card:
+  project_column:
+  project:
+  public:
+  pull_request_review_comment:
+  pull_request_review:
+  pull_request_target:
+  pull_request:
+    types: [assigned, unassigned, labeled, unlabeled, opened, edited, closed, reopened, synchronize, converted_to_draft, ready_for_review, locked, unlocked, review_requested, review_request_removed, auto_merge_enabled, auto_merge_disabled]
+  push:
+  registry_package:
+  release:
+  repository_dispatch:
+  status:
+  watch:
+  workflow_dispatch:
+  # requires specific workflows to be specified https://docs.github.com/en/actions/reference/events-that-trigger-workflows#workflow_run
+  # workflow_run: 
+
+jobs:
+  commit-event-file:
+    name: commit event file
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait For Other Pipelines
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: otto-de/github-actions-wait@647f9aba4580cb509154329965d81a3ae62c8b1e
+        with:
+          step-name: "Wait For Other Pipelines"
+
+      - name: checkout
+        uses: actions/checkout@v2
+        with:
+          ref: workflow-data
+
+      - name: copy event file to repo
+        run: |
+          prefix="workflow-data/${GITHUB_EVENT_NAME}-$(date +%s)"
+          cp "$GITHUB_EVENT_PATH" "${prefix}-event.log"
+          contextFile="${prefix}-context.json"
+          echo "${GITHUB_CONTEXT}" > "$contextFile"
+
+          # redact `github.token` in context
+          sed -i 's/${{ github.token }}/***/' "$contextFile"
+
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+
+      # - run: git fetch && git merge origin/workflow-data
+
+      - name: commit and push changes
+        uses: stefanzweifel/git-auto-commit-action@5dd17c3b53a58c1cb5eaab903826abe94765ccd6
+        with:
+          branch: workflow-data
+          commit_message: |
+            add event file for ${{ github.event_name }}
+
+            from github actions run:
+              https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
