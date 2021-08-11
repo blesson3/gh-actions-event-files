@@ -1,0 +1,36 @@
+# gh actions event files
+
+this is a repo to test GitHub actions' event files and `github` context. there is little
+documentation surrounding the syntax for these data. this is a debug and exploration solution that
+is far easier (and less expensive) to work with than using something like
+https://github.com/mxschmitt/action-tmate[`mxschmitt/action-tmate`] to ssh into a running action and
+checking out the workflow event/context from there.
+
+## What are GitHub Actions event files and context?
+
+.Two (kinda) separate things:
+. event file
+** this file contains details on why the action ran and repo conditions at the time of it's run
+** event files are found by using https://docs.github.com/en/actions/reference/environment-variables#default-environment-variables[`$GITHUB_EVENT_PATH`]. it is a json file
+** as far as I can find, there exists no documentation for the syntax of this file
+** seems like this file is the output from the api responses, but I cannot find exactly where
+. `github` context
+** https://docs.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions#github-context[documentation can be found here]
+** syntax documented well, unlike the event file syntax
+** `github` context includes all event file data in **`github.event`**
+
+NOTE: be very careful here, the `github` context contains a sensitive token that allows read/write
+permissions to your repository. it lives in `github.token` and `$GITHUB_TOKEN`. do not expose this
+publicly or people (or bots) __will__ do very bad things to your repo.
+
+## How does this repo help solve the event file syntax problem?
+
+link:.github/workflows/add-event-file.yml[this workflow file] is an action that will save all event
+files into the
+https://github.com/blesson3/gh-actions-event-files/tree/workflow-data[`workflow-data`] branch of
+this repository. it includes most all documented triggers so that it runs on almost any repo action.
+https://github.com/blesson3/gh-actions-event-files/tree/workflow-data/workflow-data[this folder]
+contains all the event files and context for all runs of the mentioned workflow file.
+
+there is still a lot of work to be done, this repo does not yet provide a good syntax reference for
+the event files, but it does have examples for a few repo triggers.
